@@ -9,11 +9,40 @@ from transformers import AutoTokenizer
 import tiktoken
 import torch.multiprocessing as mp
 
+# ========== 本地 Python API ==========
+# TODO: 实现本地模型调用接口
+def call_local_api(prompt, model, temperature=0.5, max_new_tokens=128):
+    """
+    本地 Python API 接口 - 请手动实现
+    
+    参数:
+        prompt: 输入的提示词
+        model: 模型名称
+        temperature: 温度参数
+        max_new_tokens: 最大生成 token 数
+    
+    返回:
+        str: 模型生成的回复
+    """
+    # ========================================
+    # 在这里实现你的本地模型调用逻辑
+    # 例如:
+    #   - 调用本地 HTTP API
+    #   - 直接 import 模型推理模块
+    #   - 使用 transformers pipeline
+    # ========================================
+    
+    raise NotImplementedError("本地 API 接口尚未实现，请手动补充!")
+    # return "placeholder response"
+
+
+# ========================================
+
 model_map = json.loads(open('config/model2path.json', encoding='utf-8').read())
 maxlen_map = json.loads(open('config/model2maxlen.json', encoding='utf-8').read())
 
-URL = "http://127.0.0.1:8000/v1"
-API_KEY = "token-abc123"
+# URL = "http://127.0.0.1:8000/v1"  # vLLM API 地址（不再使用）
+# API_KEY = "token-abc123"  # API Key（不再使用）
 template_rag = open('prompts/0shot_rag.txt', encoding='utf-8').read()
 template_no_context = open('prompts/0shot_no_context.txt', encoding='utf-8').read()
 template_0shot = open('prompts/0shot.txt', encoding='utf-8').read()
@@ -39,13 +68,8 @@ def query_llm(prompt, model, tokenizer, client=None, temperature=0.5, max_new_to
     while tries < 5:
         tries += 1
         try:
-            completion = client.chat.completions.create(
-                model=model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=temperature,
-                max_tokens=max_new_tokens,
-            )
-            return completion.choices[0].message.content
+            # 使用本地 API 调用
+            return call_local_api(prompt, model, temperature, max_new_tokens)
         except KeyboardInterrupt as e:
             raise e
         except Exception as e:
@@ -73,10 +97,11 @@ def get_pred(data, args, fout):
         tokenizer = tiktoken.encoding_for_model("gpt-4o-2024-08-06")
     else:
         tokenizer = AutoTokenizer.from_pretrained(model_map[model], trust_remote_code=True)
-    client = OpenAI(
-        base_url=URL,
-        api_key=API_KEY
-    )
+    # 不再使用 OpenAI client，改为本地 API
+    # client = OpenAI(
+    #     base_url=URL,
+    #     api_key=API_KEY
+    # )
     for item in tqdm(data):
         context = item['context']
         if args.rag > 0:
